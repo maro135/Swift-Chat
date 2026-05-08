@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { ArrowLeft, Send, Settings, X } from 'lucide-react';
+import { ArrowLeft, Send, Settings, X, Link as LinkIcon, Check, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ImageUpload } from '../lib/ImageUpload';
+
+import { MessageItem } from '../components/MessageItem';
+import { CommentDrawer } from '../components/CommentDrawer';
 
 export function ChatDetail() {
   const { id } = useParams();
@@ -18,6 +22,7 @@ export function ChatDetail() {
   const [editAvatarUrl, setEditAvatarUrl] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [activeCommentMessage, setActiveCommentMessage] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +108,9 @@ export function ChatDetail() {
   };
 
   const handleHeaderClick = () => {
-    if (chatInfo?.type === 'direct' && chatInfo?.participantIds) {
+    if (chatInfo?.isChannel) {
+      navigate(`/channel/${id}`);
+    } else if (chatInfo?.type === 'direct' && chatInfo?.participantIds) {
       const otherUid = chatInfo.participantIds.find((pid: string) => pid !== auth.currentUser?.uid);
       if (otherUid) navigate(`/user/${otherUid}`);
     }
@@ -156,12 +163,12 @@ export function ChatDetail() {
         </button>
         <div 
           onClick={handleHeaderClick}
-          className={`w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold overflow-hidden ${chatInfo?.type === 'direct' ? 'cursor-pointer hover:opacity-80' : ''}`}
+          className={`w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold overflow-hidden ${(chatInfo?.type === 'direct' || chatInfo?.isChannel) ? 'cursor-pointer hover:opacity-80' : ''}`}
         >
           {chatInfo?.avatarUrl ? <img src={chatInfo.avatarUrl} className="w-full h-full object-cover" /> : chatInfo?.name?.substring(0, 1).toUpperCase() || '?'}
         </div>
-        <div className="flex-1" onClick={handleHeaderClick} style={{ cursor: chatInfo?.type === 'direct' ? 'pointer' : 'default' }}>
-          <h2 className="text-white font-bold hover:underline">{chatInfo?.name || 'Chat'}</h2>
+        <div className="flex-1" onClick={handleHeaderClick} style={{ cursor: (chatInfo?.type === 'direct' || chatInfo?.isChannel) ? 'pointer' : 'default' }}>
+          <h2 className={`text-white font-bold ${(chatInfo?.type === 'direct' || chatInfo?.isChannel) ? 'hover:underline' : ''}`}>{chatInfo?.name || 'Chat'}</h2>
           <p className="text-xs text-gray-400">{chatInfo?.type === 'group' ? 'Group' : chatInfo?.isChannel ? 'Channel' : 'Direct Message'}</p>
         </div>
         {canEdit && (
@@ -175,19 +182,15 @@ export function ChatDetail() {
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-gray-500 text-sm">No messages yet. Say hello!</div>
         ) : (
-          messages.map(msg => {
-            const isMe = msg.senderId === auth.currentUser?.uid;
-            return (
-              <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl p-3 ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-zinc-800 text-white rounded-tl-sm'}`}>
-                  <p className="text-sm">{msg.content}</p>
-                </div>
-                <span className="text-[10px] text-gray-500 mt-1 px-1">
-                  {msg.createdAt?.toDate ? format(msg.createdAt.toDate(), "hh:mm a") : '...'}
-                </span>
-              </div>
-            );
-          })
+          messages.map(msg => (
+             <MessageItem 
+                key={msg.id} 
+                msg={msg} 
+                chatId={id!} 
+                isChannel={!!chatInfo?.isChannel} 
+                onOpenComments={(msgId) => setActiveCommentMessage(msgId)} 
+             />
+          ))
         )}
         <div ref={scrollRef} />
       </div>
@@ -205,6 +208,15 @@ export function ChatDetail() {
           <Send size={18} className="translate-x-[1px]" />
         </button>
       </form>
+      )}
+
+      {activeCommentMessage && (
+        <CommentDrawer 
+           chatId={id!} 
+           messageId={activeCommentMessage} 
+           isChannel={!!chatInfo?.isChannel} 
+           onClose={() => setActiveCommentMessage(null)} 
+        />
       )}
 
       {showSettings && (
@@ -226,24 +238,39 @@ export function ChatDetail() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
-                <input 
-                  value={editAvatarUrl} 
-                  onChange={e => setEditAvatarUrl(e.target.value)} 
-                  type="text" 
-                  placeholder="https://..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
-                />
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Avatar Picture</label>
+                <ImageUpload value={editAvatarUrl} onChange={setEditAvatarUrl} />
               </div>
               {chatInfo?.isChannel && (
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Description</label>
-                  <textarea 
-                    value={editDescription} 
-                    onChange={e => setEditDescription(e.target.value)} 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white min-h-[80px] focus:outline-none focus:border-blue-500" 
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Description</label>
+                    <textarea 
+                      value={editDescription} 
+                      onChange={e => setEditDescription(e.target.value)} 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white min-h-[80px] focus:outline-none focus:border-blue-500" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Channel Link</label>
+                    <div className="flex bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                      <input 
+                        readOnly
+                        value={`${window.location.origin}/chat/${id}`}
+                        className="flex-1 bg-transparent py-2 px-3 text-sm text-zinc-400 focus:outline-none" 
+                      />
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/chat/${id}`);
+                          alert('Link copied to clipboard!');
+                        }}
+                        className="px-3 bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center cursor-pointer"
+                      >
+                        <LinkIcon size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
               
               <button disabled={savingSettings} onClick={saveSettings} className="w-full bg-blue-600 text-white rounded-xl py-3 font-bold mt-2 disabled:opacity-50 hover:bg-blue-700 active:scale-95 transition-all">

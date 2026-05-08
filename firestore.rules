@@ -27,7 +27,7 @@ service cloud.firestore {
         && data.createdAt is timestamp
         && data.updatedAt is timestamp
         && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100))
-        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1000000))
         && (!('bio' in data) || (data.bio is string && data.bio.size() <= 500))
         && (!('onlineStatus' in data) || data.onlineStatus is bool)
         && (!('lastSeen' in data) || data.lastSeen is number)
@@ -45,7 +45,7 @@ service cloud.firestore {
         && data.createdAt is timestamp
         && data.updatedAt is timestamp
         && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
-        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1000000))
         && (!('isVerified' in data) || data.isVerified is bool);
     }
 
@@ -59,11 +59,14 @@ service cloud.firestore {
 
     function isValidChannelPost(data, isCreate) {
       let hasReq = data.keys().hasAll(['authorId', 'content', 'createdAt']);
-      let exactSize = isCreate ? data.keys().size() == 3 : true;
-      return hasReq && exactSize
-        && data.authorId is string && data.authorId == request.auth.uid
+      return hasReq
+        && data.authorId is string
         && data.content is string && data.content.size() <= 2000
-        && data.createdAt is timestamp;
+        && data.createdAt is timestamp
+        && (!('editedAt' in data) || data.editedAt is timestamp)
+        && (!('viewedBy' in data) || data.viewedBy is list)
+        && (!('reactions' in data) || data.reactions is map)
+        && (!('commentsCount' in data) || data.commentsCount is number);
     }
 
     function isValidChat(data, isCreate) {
@@ -76,7 +79,7 @@ service cloud.firestore {
         && data.createdAt is timestamp
         && data.updatedAt is timestamp
         && (!('name' in data) || (data.name is string && data.name.size() <= 100))
-        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1000000))
         && (!('recentMessage' in data) || (data.recentMessage is string && data.recentMessage.size() <= 1000))
         && (!('recentMessageAt' in data) || data.recentMessageAt is timestamp);
     }
@@ -92,12 +95,14 @@ service cloud.firestore {
 
     function isValidMessage(data, isCreate) {
       let hasReq = data.keys().hasAll(['senderId', 'content', 'status', 'createdAt']);
-      let exactSize = isCreate ? data.keys().size() == 4 : true;
-      return hasReq && exactSize
-        && data.senderId is string && data.senderId == request.auth.uid
+      return hasReq
+        && data.senderId is string
         && data.content is string && data.content.size() <= 2000
         && data.status is string && (data.status == 'sent' || data.status == 'delivered' || data.status == 'read')
-        && data.createdAt is timestamp;
+        && data.createdAt is timestamp
+        && (!('editedAt' in data) || data.editedAt is timestamp)
+        && (!('viewedBy' in data) || data.viewedBy is list)
+        && (!('reactions' in data) || data.reactions is map);
     }
 
     match /users/{userId} {
@@ -114,6 +119,26 @@ service cloud.firestore {
                     && incoming().updatedAt == request.time
                     && incoming().createdAt == existing().createdAt
                     && incoming().email == existing().email;
+    }
+
+    match /users/{userId}/followers/{followerId} {
+      allow get, list: if isSignedIn();
+      allow create: if isVerified()
+                    && isValidId(followerId)
+                    && followerId == request.auth.uid
+                    && incoming().userId == request.auth.uid
+                    && incoming().createdAt == request.time;
+      allow delete: if isVerified() && followerId == request.auth.uid;
+    }
+
+    match /users/{userId}/following/{followingId} {
+      allow get, list: if isSignedIn();
+      allow create: if isVerified()
+                    && isValidId(followingId)
+                    && request.auth.uid == userId
+                    && incoming().targetId == followingId
+                    && incoming().createdAt == request.time;
+      allow delete: if isVerified() && request.auth.uid == userId;
     }
 
     match /channels/{channelId} {
@@ -151,9 +176,33 @@ service cloud.firestore {
                     && isValidId(postId)
                     && isValidChannelPost(incoming(), true)
                     && incoming().createdAt == request.time
-                    && get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid;
+                    && get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid
+                    && incoming().authorId == request.auth.uid;
+      allow update: if isVerified()
+                    && isValidChannelPost(incoming(), false)
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().authorId == existing().authorId
+                    && (
+                       (incoming().diff(existing()).affectedKeys().hasOnly(['viewedBy', 'reactions', 'commentsCount']))
+                       || 
+                       (get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'editedAt']))
+                    );
       allow delete: if isVerified()
                     && get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid;
+    }
+
+    match /channels/{channelId}/posts/{postId}/comments/{commentId} {
+      allow get, list: if isSignedIn();
+      allow create: if isVerified()
+                    && isValidId(commentId)
+                    && incoming().authorId == request.auth.uid
+                    && incoming().content is string && incoming().content.size() <= 1000
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified()
+                    && existing().authorId == request.auth.uid
+                    && incoming().content is string && incoming().content.size() <= 1000
+                    && incoming().editedAt == request.time;
+      allow delete: if isVerified() && (existing().authorId == request.auth.uid || get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid);
     }
 
     match /chats/{chatId} {
@@ -198,8 +247,26 @@ service cloud.firestore {
                     && isValidMessage(incoming(), false)
                     && incoming().createdAt == existing().createdAt
                     && incoming().senderId == existing().senderId
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+                    && (
+                       (request.auth.uid == existing().senderId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'editedAt', 'status']))
+                       || (exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid)) && incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'viewedBy', 'status']))
+                    )
                     && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+    }
+
+    match /chats/{chatId}/messages/{messageId}/comments/{commentId} {
+      allow get, list: if isSignedIn() && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+      allow create: if isVerified()
+                    && isValidId(commentId)
+                    && incoming().authorId == request.auth.uid
+                    && incoming().content is string && incoming().content.size() <= 1000
+                    && incoming().createdAt == request.time
+                    && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+      allow update: if isVerified()
+                    && existing().authorId == request.auth.uid
+                    && incoming().content is string && incoming().content.size() <= 1000
+                    && incoming().editedAt == request.time;
+      allow delete: if isVerified() && existing().authorId == request.auth.uid;
     }
   }
 }

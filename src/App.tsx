@@ -13,6 +13,7 @@ import { Channels } from './pages/Channels';
 import { Profile } from './pages/Profile';
 import { ChatDetail } from './pages/ChatDetail';
 import { UserProfile } from './pages/UserProfile';
+import { ChannelProfile } from './pages/ChannelProfile';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/chat/:id" element={<ChatDetail />} />
           <Route path="/user/:id" element={<UserProfile />} />
+          <Route path="/channel/:id" element={<ChannelProfile />} />
           
           <Route element={<MobileLayout />}>
             <Route path="/" element={<Navigate to="/chats" replace />} />

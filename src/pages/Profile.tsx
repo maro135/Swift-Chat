@@ -3,12 +3,14 @@ import { useAuth, handleFirestoreError, OperationType } from '../context/AuthCon
 import { LogOut, User as UserIcon, Shield, Bell, Key, X, Check } from "lucide-react";
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { ImageUpload } from '../lib/ImageUpload';
 
 export function Profile() {
   const { user, profile, signOut } = useAuth();
   
   const [showEdit, setShowEdit] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
@@ -16,6 +18,7 @@ export function Profile() {
   
   const openEditModal = () => {
      setDisplayName(profile?.displayName || '');
+     setUsername(profile?.username || '');
      setBio(profile?.bio || '');
      setAvatarUrl(profile?.avatarUrl || '');
      setShowEdit(true);
@@ -28,6 +31,7 @@ export function Profile() {
         const userRef = doc(db, 'users', auth.currentUser.uid);
         const updateData: any = {
            displayName: displayName.trim(),
+           username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
            bio: bio.trim(),
            updatedAt: serverTimestamp()
         };
@@ -89,6 +93,17 @@ export function Profile() {
         <button onClick={openEditModal} className="mt-6 bg-white/5 border border-white/10 text-white px-6 py-2 rounded-full text-xs font-bold hover:bg-white/10 transition-colors">Edit Profile</button>
       </div>
 
+      <div className="flex justify-center divide-x divide-white/10 mb-8 border-y border-white/5 py-4 bg-[#0A0A0A]">
+        <div className="px-6 text-center">
+          <p className="text-lg font-bold text-white uppercase">{profile?.followersCount || 0}</p>
+          <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">Followers</p>
+        </div>
+        <div className="px-6 text-center">
+          <p className="text-lg font-bold text-white uppercase">{profile?.followingCount || 0}</p>
+          <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">Following</p>
+        </div>
+      </div>
+
       <div className="space-y-4 mb-8">
         <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden divide-y divide-white/5 border border-white/5">
            <ToggleItem icon={Shield} label="Private Account" description="Make your profile private" active={!!profile?.isPrivate} onToggle={togglePrivateAccount} />
@@ -126,14 +141,17 @@ export function Profile() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Username</label>
                 <input 
-                  value={avatarUrl} 
-                  onChange={e => setAvatarUrl(e.target.value)} 
+                  value={username} 
+                  onChange={e => setUsername(e.target.value)} 
                   type="text" 
-                  placeholder="https://..."
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
                 />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Avatar Picture</label>
+                <ImageUpload value={avatarUrl} onChange={setAvatarUrl} />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Bio</label>

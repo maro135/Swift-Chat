@@ -5,6 +5,7 @@ import { db, auth } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { ImageUpload } from '../lib/ImageUpload';
 
 export function Groups() {
   const navigate = useNavigate();
@@ -148,14 +149,8 @@ export function Groups() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
-                <input 
-                  value={avatarUrl} 
-                  onChange={e => { setAvatarUrl(e.target.value); setErrorMsg(''); }} 
-                  type="text" 
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
-                  placeholder="https://..." 
-                />
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Group Picture</label>
+                <ImageUpload value={avatarUrl} onChange={setAvatarUrl} />
                 {errorMsg && <p className="text-red-400 text-xs mt-2">{errorMsg}</p>}
               </div>
               
