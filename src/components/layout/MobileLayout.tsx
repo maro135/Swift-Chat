@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { MessageCircle, Users, Hash, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { motion } from 'motion/react';
 
 export function MobileLayout() {
   const { user, loading } = useAuth();
@@ -58,12 +59,15 @@ export function MobileLayout() {
                 key={tab.path}
                 onClick={() => navigate(tab.path)}
                 className={cn(
-                  "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors",
-                  isActive ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300"
+                  "relative flex flex-col items-center justify-center w-full h-full gap-1 transition-colors active:scale-95",
+                  isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
-                <Icon size={20} className={cn(isActive && "fill-current")} />
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{tab.name}</span>
+                {isActive && (
+                   <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-xl" transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
+                )}
+                <Icon size={20} className={cn("relative z-10", isActive && "text-blue-500")} />
+                <span className="relative z-10 text-[10px] font-bold uppercase tracking-tighter">{tab.name}</span>
               </button>
             );
           })}

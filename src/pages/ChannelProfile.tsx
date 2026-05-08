@@ -4,6 +4,7 @@ import { doc, getDoc, collection, setDoc, serverTimestamp, deleteDoc, onSnapshot
 import { db, auth } from '../lib/firebase';
 import { ArrowLeft, Hash, Users, Trash2, Edit3, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export function ChannelProfile() {
   const { id } = useParams();
@@ -54,7 +55,7 @@ export function ChannelProfile() {
         });
       }
     } catch(e) {
-      alert("Error toggling follow");
+      toast.error("Error toggling follow");
     } finally {
       setTogglingFollow(false);
     }
@@ -67,7 +68,7 @@ export function ChannelProfile() {
         await deleteDoc(doc(db, 'channels', id));
         navigate('/channels');
       } catch(e) {
-        alert("Error deleting channel");
+        toast.error("Error deleting channel");
       }
     }
   };

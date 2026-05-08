@@ -5,6 +5,7 @@ import { db, auth } from '../lib/firebase';
 import { ArrowLeft, Send, Settings, X, Link as LinkIcon, Check, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ImageUpload } from '../lib/ImageUpload';
+import { toast } from 'sonner';
 
 import { MessageItem } from '../components/MessageItem';
 import { CommentDrawer } from '../components/CommentDrawer';
@@ -103,7 +104,7 @@ export function ChatDetail() {
       }
     } catch (err) {
       console.error('Error sending message', err);
-      alert('Error sending message. Check permissions.');
+      toast.error('Error sending message. Check permissions.');
     }
   };
 
@@ -140,7 +141,7 @@ export function ChatDetail() {
       setChatInfo({ ...chatInfo, ...updateData, avatarUrl: updateData.avatarUrl || chatInfo.avatarUrl });
       setShowSettings(false);
     } catch (e) {
-      alert("Error updating settings. Make sure you have permission.");
+      toast.error("Error updating settings. Make sure you have permission.");
     } finally {
       setSavingSettings(false);
     }
@@ -262,7 +263,7 @@ export function ChatDetail() {
                       <button 
                         onClick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/chat/${id}`);
-                          alert('Link copied to clipboard!');
+                          toast.success('Link copied to clipboard!');
                         }}
                         className="px-3 bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center cursor-pointer"
                       >

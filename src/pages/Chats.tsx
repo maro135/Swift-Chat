@@ -5,6 +5,7 @@ import { handleFirestoreError, OperationType } from '../context/AuthContext';
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { MessageSquare, Search, X, User as UserIcon } from "lucide-react";
+import { motion } from 'motion/react';
 
 export function Chats() {
   const navigate = useNavigate();
@@ -162,12 +163,19 @@ export function Chats() {
         </div>
       ) : (
         <div className="space-y-4">
-          {chats.map((chat) => (
-            <div onClick={() => navigate(`/chat/${chat.id}`)} key={chat.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+          {chats.map((chat, i) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              onClick={() => navigate(`/chat/${chat.id}`)} 
+              key={chat.id} 
+              className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors cursor-pointer active:scale-95 duration-200"
+            >
                <div className="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs flex-shrink-0 overflow-hidden">
                  {chat.avatarUrl ? <img src={chat.avatarUrl} className="w-full h-full object-cover" /> : chat.name ? chat.name.substring(0, 2).toUpperCase() : 'U'}
                </div>
-               <div className="flex-1 min-w-0">
+               <div className="flex-1 min-w-0 pointer-events-none">
                  <div className="flex justify-between items-center mb-1">
                    <h3 className="text-sm font-medium truncate text-white">{chat.name || 'Unknown User'}</h3>
                    <span className="text-[10px] opacity-40">
@@ -176,7 +184,7 @@ export function Chats() {
                  </div>
                  <p className="text-xs opacity-50 text-white truncate">{chat.recentMessage || 'Started a new chat'}</p>
                </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}

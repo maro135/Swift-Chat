@@ -5,6 +5,8 @@ import { handleFirestoreError, OperationType } from '../context/AuthContext';
 import { Hash, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from '../lib/ImageUpload';
+import { toast } from 'sonner';
+import { motion } from 'motion/react';
 
 export function Channels() {
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ export function Channels() {
       navigate(`/chat/${channelRef.id}`);
     } catch (e) {
       handleFirestoreError(e, OperationType.CREATE, 'channels');
-      alert(`Error creating channel: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      toast.error(`Error creating channel: ${e instanceof Error ? e.message : 'Unknown error'}`);
     } finally {
       setCreating(false);
     }
@@ -115,8 +117,14 @@ export function Channels() {
       ) : (
         <div className="space-y-8 pb-20">
           {/* Verified Priority */}
-          {verifiedChannels.map((channel) => (
-            <div key={channel.id} className="relative w-full bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-3xl border border-blue-500/20 overflow-hidden flex items-center p-6 group">
+          {verifiedChannels.map((channel, i) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              key={channel.id} 
+              className="relative w-full bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-3xl border border-blue-500/20 overflow-hidden flex items-center p-6 group"
+            >
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
               <div className="relative z-10 flex flex-col gap-4 w-full">
                 <div className="flex items-center gap-4">
@@ -140,14 +148,21 @@ export function Channels() {
                   Subscribe
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
 
           {/* Regular Channels Grid */}
           <div className="grid grid-cols-2 gap-4">
-            {regularChannels.map((channel) => (
-              <div key={channel.id} className="bg-[#0A0A0A] border border-white/5 p-4 rounded-2xl flex flex-col gap-3">
-                <div className="flex justify-between items-start">
+            {regularChannels.map((channel, i) => (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                key={channel.id} 
+                className="bg-[#0A0A0A] border border-white/5 p-4 rounded-2xl flex flex-col gap-3 hover:bg-white/5 transition-colors cursor-pointer active:scale-95 duration-200"
+                onClick={() => handleSubscribe(channel.id)}
+              >
+                <div className="flex justify-between items-start pointer-events-none">
                   <div className="w-12 h-12 bg-zinc-800 rounded-xl overflow-hidden flex items-center justify-center text-xl font-bold text-gray-500">
                     {channel.avatarUrl ? <img src={channel.avatarUrl} alt="" className="w-full h-full object-cover" /> : channel.name[0]}
                   </div>
@@ -156,15 +171,14 @@ export function Channels() {
                   <h4 className="font-bold text-sm mb-1 text-white">{channel.name}</h4>
                   <p className="text-[11px] text-zinc-500 line-clamp-2">{channel.description || 'Welcome to this channel'}</p>
                 </div>
-                <div className="mt-auto pt-2 flex items-center justify-between">
+                <div className="mt-auto pt-2 flex items-center justify-between pointer-events-none">
                   <span className="text-[10px] font-mono text-zinc-600 truncate mr-2">@{channel.handle}</span>
                   <button 
-                    onClick={() => handleSubscribe(channel.id)}
                     className="text-xs font-bold text-blue-400 shrink-0 hover:text-blue-300">
                     Join
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>

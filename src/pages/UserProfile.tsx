@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, setDoc, serverTimestamp
 import { db, auth } from '../lib/firebase';
 import { ArrowLeft, User as UserIcon, Shield, MessageSquare, UserPlus, UserMinus } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export function UserProfile() {
   const { id } = useParams();
@@ -66,7 +67,7 @@ export function UserProfile() {
         });
       }
     } catch(e) {
-      alert("Error toggling follow");
+      toast.error("Error toggling follow");
     } finally {
       setTogglingFollow(false);
     }
@@ -113,7 +114,7 @@ export function UserProfile() {
       navigate(`/chat/${chatRef.id}`);
     } catch (e) {
       console.error(e);
-      alert('Error creating chat');
+      toast.error('Error creating chat');
     } finally {
       setMessaging(false);
     }

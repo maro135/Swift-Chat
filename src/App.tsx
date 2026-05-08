@@ -4,6 +4,7 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { Login } from './pages/Login';
 import { MobileLayout } from './components/layout/MobileLayout';
@@ -18,6 +19,7 @@ import { ChannelProfile } from './pages/ChannelProfile';
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster theme="dark" position="top-center" toastOptions={{ className: 'rounded-2xl border-white/10 bg-[#1A1A1A] text-white' }} />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />

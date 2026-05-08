@@ -6,6 +6,7 @@ import { handleFirestoreError, OperationType } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ImageUpload } from '../lib/ImageUpload';
+import { motion } from 'motion/react';
 
 export function Groups() {
   const navigate = useNavigate();
@@ -109,12 +110,19 @@ export function Groups() {
         </div>
       ) : (
         <div className="space-y-4">
-          {groups.map((group) => (
-            <div onClick={() => navigate(`/chat/${group.id}`)} key={group.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+          {groups.map((group, i) => (
+            <motion.div 
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: i * 0.05 }}
+               onClick={() => navigate(`/chat/${group.id}`)} 
+               key={group.id} 
+               className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors cursor-pointer active:scale-95 duration-200"
+            >
                <div className="w-10 h-10 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs flex-shrink-0 overflow-hidden">
                  {group.avatarUrl ? <img src={group.avatarUrl} className="w-full h-full object-cover" /> : group.name ? group.name.substring(0, 2).toUpperCase() : 'G'}
                </div>
-               <div className="flex-1 min-w-0">
+               <div className="flex-1 min-w-0 pointer-events-none">
                  <div className="flex justify-between items-center mb-1">
                    <h3 className="text-sm font-medium truncate text-white">{group.name}</h3>
                    <span className="text-[10px] opacity-40">
@@ -123,7 +131,7 @@ export function Groups() {
                  </div>
                  <p className="text-xs opacity-50 text-white truncate">{group.recentMessage || 'Group created'}</p>
                </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}

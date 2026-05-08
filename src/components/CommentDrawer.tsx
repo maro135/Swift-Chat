@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, setDoc, doc, serverTimestamp, g
 import { db, auth } from '../lib/firebase';
 import { X, Send } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface CommentDrawerProps {
   chatId: string;
@@ -74,7 +75,7 @@ export function CommentDrawer({ chatId, messageId, isChannel, onClose }: Comment
         createdAt: serverTimestamp()
       });
     } catch (e) {
-      alert("Error posting comment.");
+      toast.error("Error posting comment.");
     }
   };
 

@@ -4,6 +4,7 @@ import { LogOut, User as UserIcon, Shield, Bell, Key, X, Check } from "lucide-re
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { ImageUpload } from '../lib/ImageUpload';
+import { toast } from 'sonner';
 
 export function Profile() {
   const { user, profile, signOut } = useAuth();
@@ -57,9 +58,9 @@ export function Profile() {
       await updateDoc(userRef, {
         notificationsEnabled: !profile?.notificationsEnabled,
       });
-      window.location.reload();
+      toast.success("Updated Successfully.");
     } catch(e) {
-      alert("Error updating setting");
+      toast.error("Error updating setting");
     }
   }
 
@@ -70,9 +71,9 @@ export function Profile() {
       await updateDoc(userRef, {
         isPrivate: !profile?.isPrivate,
       });
-      window.location.reload();
+      toast.success("Updated Successfully.");
     } catch(e) {
-      alert("Error updating setting");
+      toast.error("Error updating setting");
     }
   }
 

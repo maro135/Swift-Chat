@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Camera, Image as ImageIcon } from 'lucide-react';
 import { handleImageProcess } from './imageHandler';
+import { toast } from 'sonner';
 
 interface ImageUploadProps {
   value: string;
@@ -23,7 +24,7 @@ export function ImageUpload({ value, onChange, className = '', placeholder = "Ch
       onChange(base64);
     } catch (err) {
       console.error(err);
-      alert("Error processing image.");
+      toast.error("Error processing image.");
     } finally {
       setLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

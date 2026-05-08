@@ -4,6 +4,7 @@ import { db, auth } from '../lib/firebase';
 import { format } from 'date-fns';
 import { MessageSquare, Eye, Edit2, Check, SmilePlus } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
+import { toast } from 'sonner';
 
 const EMOJIS = ['👍', '❤️', '🔥', '😂', '🎉'];
 
@@ -54,7 +55,7 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
       });
       setIsEditing(false);
     } catch(e) {
-      alert("Error editing message");
+      toast.error("Error editing message");
     }
   };
 
@@ -77,7 +78,7 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
         [`reactions.${emoji}`]: newEmojiUsers
       });
     } catch(e) {
-      alert("Error adding reaction");
+      toast.error("Error adding reaction");
     }
   };
 
