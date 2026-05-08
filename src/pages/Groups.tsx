@@ -12,6 +12,7 @@ export function Groups() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [groupName, setGroupName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [creating, setCreating] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -43,13 +44,17 @@ export function Groups() {
     setErrorMsg('');
     try {
       const groupRef = doc(collection(db, 'chats'));
-      await setDoc(groupRef, {
+      const groupData: any = {
         type: 'group',
         participantIds: [auth.currentUser.uid],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         name: groupName.trim()
-      });
+      };
+      if (avatarUrl.trim() !== '') {
+         groupData.avatarUrl = avatarUrl.trim();
+      }
+      await setDoc(groupRef, groupData);
 
       await setDoc(doc(db, 'chats', groupRef.id, 'participants', auth.currentUser.uid), {
          userId: auth.currentUser.uid,
@@ -105,8 +110,8 @@ export function Groups() {
         <div className="space-y-4">
           {groups.map((group) => (
             <div onClick={() => navigate(`/chat/${group.id}`)} key={group.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-               <div className="w-10 h-10 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs flex-shrink-0">
-                 {group.name ? group.name.substring(0, 2).toUpperCase() : 'G'}
+               <div className="w-10 h-10 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs flex-shrink-0 overflow-hidden">
+                 {group.avatarUrl ? <img src={group.avatarUrl} className="w-full h-full object-cover" /> : group.name ? group.name.substring(0, 2).toUpperCase() : 'G'}
                </div>
                <div className="flex-1 min-w-0">
                  <div className="flex justify-between items-center mb-1">
@@ -140,6 +145,16 @@ export function Groups() {
                   type="text" 
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
                   placeholder="e.g. Project Apollo" 
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
+                <input 
+                  value={avatarUrl} 
+                  onChange={e => { setAvatarUrl(e.target.value); setErrorMsg(''); }} 
+                  type="text" 
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
+                  placeholder="https://..." 
                 />
                 {errorMsg && <p className="text-red-400 text-xs mt-2">{errorMsg}</p>}
               </div>

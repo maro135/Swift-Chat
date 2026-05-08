@@ -10,12 +10,14 @@ export function Profile() {
   const [showEdit, setShowEdit] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   
   const openEditModal = () => {
      setDisplayName(profile?.displayName || '');
      setBio(profile?.bio || '');
+     setAvatarUrl(profile?.avatarUrl || '');
      setShowEdit(true);
   };
 
@@ -24,11 +26,15 @@ export function Profile() {
      setSaving(true);
      try {
         const userRef = doc(db, 'users', auth.currentUser.uid);
-        await updateDoc(userRef, {
+        const updateData: any = {
            displayName: displayName.trim(),
            bio: bio.trim(),
            updatedAt: serverTimestamp()
-        });
+        };
+        if (avatarUrl.trim() !== '') {
+           updateData.avatarUrl = avatarUrl.trim();
+        }
+        await updateDoc(userRef, updateData);
         setShowEdit(false);
         // Using window.location.reload to ensure all states update
         window.location.reload();
@@ -116,6 +122,16 @@ export function Profile() {
                   value={displayName} 
                   onChange={e => setDisplayName(e.target.value)} 
                   type="text" 
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
+                <input 
+                  value={avatarUrl} 
+                  onChange={e => setAvatarUrl(e.target.value)} 
+                  type="text" 
+                  placeholder="https://..."
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
                 />
               </div>

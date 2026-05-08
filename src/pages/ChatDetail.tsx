@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, Settings, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function ChatDetail() {
@@ -12,6 +12,13 @@ export function ChatDetail() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  const [showSettings, setShowSettings] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -102,6 +109,41 @@ export function ChatDetail() {
     }
   };
 
+  const openSettings = () => {
+    setEditName(chatInfo?.name || '');
+    setEditAvatarUrl(chatInfo?.avatarUrl || '');
+    setEditDescription(chatInfo?.description || '');
+    setShowSettings(true);
+  };
+
+  const saveSettings = async () => {
+    if (!chatInfo || !id || !auth.currentUser) return;
+    setSavingSettings(true);
+    try {
+      const isChannel = chatInfo.isChannel;
+      const docRef = doc(db, isChannel ? 'channels' : 'chats', id);
+      const updateData: any = {
+        name: editName.trim(),
+        updatedAt: serverTimestamp()
+      };
+      if (editAvatarUrl.trim()) updateData.avatarUrl = editAvatarUrl.trim();
+      if (isChannel) updateData.description = editDescription.trim();
+      
+      await updateDoc(docRef, updateData);
+      setChatInfo({ ...chatInfo, ...updateData, avatarUrl: updateData.avatarUrl || chatInfo.avatarUrl });
+      setShowSettings(false);
+    } catch (e) {
+      alert("Error updating settings. Make sure you have permission.");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const canEdit = chatInfo && (
+    (chatInfo.isChannel && chatInfo.ownerId === auth.currentUser?.uid) ||
+    (chatInfo.type === 'group' && chatInfo.participantIds?.includes(auth.currentUser?.uid))
+  );
+
   if (loading) {
     return <div className="flex-1 bg-[#050505] flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>;
   }
@@ -120,8 +162,13 @@ export function ChatDetail() {
         </div>
         <div className="flex-1" onClick={handleHeaderClick} style={{ cursor: chatInfo?.type === 'direct' ? 'pointer' : 'default' }}>
           <h2 className="text-white font-bold hover:underline">{chatInfo?.name || 'Chat'}</h2>
-          <p className="text-xs text-gray-400">{chatInfo?.type === 'group' ? 'Group' : 'Direct Message'}</p>
+          <p className="text-xs text-gray-400">{chatInfo?.type === 'group' ? 'Group' : chatInfo?.isChannel ? 'Channel' : 'Direct Message'}</p>
         </div>
+        {canEdit && (
+          <button onClick={openSettings} className="text-gray-400 hover:text-white transition-colors">
+            <Settings size={20} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
@@ -158,6 +205,53 @@ export function ChatDetail() {
           <Send size={18} className="translate-x-[1px]" />
         </button>
       </form>
+      )}
+
+      {showSettings && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex justify-center items-center p-4">
+          <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-white">Settings</h3>
+              <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Name</label>
+                <input 
+                  value={editName} 
+                  onChange={e => setEditName(e.target.value)} 
+                  type="text" 
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
+                <input 
+                  value={editAvatarUrl} 
+                  onChange={e => setEditAvatarUrl(e.target.value)} 
+                  type="text" 
+                  placeholder="https://..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" 
+                />
+              </div>
+              {chatInfo?.isChannel && (
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Description</label>
+                  <textarea 
+                    value={editDescription} 
+                    onChange={e => setEditDescription(e.target.value)} 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white min-h-[80px] focus:outline-none focus:border-blue-500" 
+                  />
+                </div>
+              )}
+              
+              <button disabled={savingSettings} onClick={saveSettings} className="w-full bg-blue-600 text-white rounded-xl py-3 font-bold mt-2 disabled:opacity-50 hover:bg-blue-700 active:scale-95 transition-all">
+                {savingSettings ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

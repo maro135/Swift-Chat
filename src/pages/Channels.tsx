@@ -13,6 +13,7 @@ export function Channels() {
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
   const [description, setDescription] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function Channels() {
     setCreating(true);
     try {
       const channelRef = doc(collection(db, 'channels'));
-      await setDoc(channelRef, {
+      const channelData: any = {
         ownerId: auth.currentUser.uid,
         name: name.trim(),
         handle: handle.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
@@ -49,11 +50,16 @@ export function Channels() {
         isVerified: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+      if (avatarUrl.trim() !== '') {
+        channelData.avatarUrl = avatarUrl.trim();
+      }
+      await setDoc(channelRef, channelData);
       setShowCreate(false);
       setName('');
       setHandle('');
       setDescription('');
+      setAvatarUrl('');
       navigate(`/chat/${channelRef.id}`);
     } catch (e) {
       handleFirestoreError(e, OperationType.CREATE, 'channels');
@@ -180,6 +186,10 @@ export function Channels() {
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Username Handle</label>
                 <input value={handle} onChange={e=>setHandle(e.target.value)} type="text" className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="e.g. kotlin_devs" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Avatar URL</label>
+                <input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} type="text" className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="https://..." />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Description</label>
