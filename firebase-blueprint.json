@@ -1,0 +1,130 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "username": { "type": "string" },
+        "displayName": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "bio": { "type": "string" },
+        "onlineStatus": { "type": "boolean" },
+        "lastSeen": { "type": "number" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["email", "username", "createdAt", "updatedAt"]
+    },
+    "Channel": {
+      "title": "Channel",
+      "description": "A broadcast channel",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "handle": { "type": "string" },
+        "description": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "name", "handle", "createdAt", "updatedAt"]
+    },
+    "ChannelSubscriber": {
+      "title": "ChannelSubscriber",
+      "description": "A user subscribed to a channel",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "ChannelPost": {
+      "title": "ChannelPost",
+      "description": "A post in a channel",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["authorId", "content", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A private or group chat",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["direct", "group"] },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "recentMessage": { "type": "string" },
+        "recentMessageAt": { "type": "timestamp" },
+        "participantIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["type", "participantIds", "createdAt", "updatedAt"]
+    },
+    "ChatParticipant": {
+      "title": "ChatParticipant",
+      "description": "A user participating in a chat",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "admin", "member"] },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["userId", "role", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A message in a chat",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "content": { "type": "string" },
+        "status": { "type": "string", "enum": ["sent", "delivered", "read"] },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["senderId", "content", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "channels/{channelId}": {
+      "schema": { "$ref": "#/entities/Channel" },
+      "description": "Channels"
+    },
+    "channels/{channelId}/subscribers/{subscriberId}": {
+      "schema": { "$ref": "#/entities/ChannelSubscriber" },
+      "description": "Subscribers to a channel"
+    },
+    "channels/{channelId}/posts/{postId}": {
+      "schema": { "$ref": "#/entities/ChannelPost" },
+      "description": "Posts within a channel"
+    },
+    "chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Chats"
+    },
+    "chats/{chatId}/participants/{participantId}": {
+      "schema": { "$ref": "#/entities/ChatParticipant" },
+      "description": "Participants of a chat"
+    },
+    "chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Messages within a chat"
+    }
+  }
+}

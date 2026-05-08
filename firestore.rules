@@ -1,0 +1,205 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    
+    // Auth bypass for testing/development if needed, but keeping strict
+    function isValidUser(data, isCreate) {
+      let hasReq = data.keys().hasAll(['email', 'username', 'createdAt', 'updatedAt']);
+      let exactSize = isCreate ? (data.keys().size() >= 4 && data.keys().size() <= 11) : true;
+      return hasReq && exactSize
+        && data.email is string && data.email.size() <= 100
+        && data.username is string && data.username.size() <= 50
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 500))
+        && (!('onlineStatus' in data) || data.onlineStatus is bool)
+        && (!('lastSeen' in data) || data.lastSeen is number)
+        && (!('notificationsEnabled' in data) || data.notificationsEnabled is bool)
+        && (!('isPrivate' in data) || data.isPrivate is bool);
+    }
+
+    function isValidChannel(data, isCreate) {
+      let hasReq = data.keys().hasAll(['ownerId', 'name', 'handle', 'createdAt', 'updatedAt']);
+      let exactSize = isCreate ? (data.keys().size() >= 5 && data.keys().size() <= 8) : true;
+      return hasReq && exactSize
+        && data.ownerId is string && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() <= 100
+        && data.handle is string && data.handle.size() <= 50
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+        && (!('isVerified' in data) || data.isVerified is bool);
+    }
+
+    function isValidChannelSubscriber(data, isCreate) {
+      let hasReq = data.keys().hasAll(['userId', 'createdAt']);
+      let exactSize = isCreate ? data.keys().size() == 2 : true;
+      return hasReq && exactSize
+        && data.userId is string && data.userId == request.auth.uid
+        && data.createdAt is timestamp;
+    }
+
+    function isValidChannelPost(data, isCreate) {
+      let hasReq = data.keys().hasAll(['authorId', 'content', 'createdAt']);
+      let exactSize = isCreate ? data.keys().size() == 3 : true;
+      return hasReq && exactSize
+        && data.authorId is string && data.authorId == request.auth.uid
+        && data.content is string && data.content.size() <= 2000
+        && data.createdAt is timestamp;
+    }
+
+    function isValidChat(data, isCreate) {
+      let hasReq = data.keys().hasAll(['type', 'participantIds', 'createdAt', 'updatedAt']);
+      let exactSize = isCreate ? (data.keys().size() >= 4 && data.keys().size() <= 8) : true;
+      return hasReq && exactSize
+        && data.type is string && (data.type == 'direct' || data.type == 'group')
+        && data.participantIds is list && data.participantIds.size() > 0 && data.participantIds.size() <= 100
+        && data.participantIds[0] is string
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('name' in data) || (data.name is string && data.name.size() <= 100))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+        && (!('recentMessage' in data) || (data.recentMessage is string && data.recentMessage.size() <= 1000))
+        && (!('recentMessageAt' in data) || data.recentMessageAt is timestamp);
+    }
+    
+    function isValidChatParticipant(data, isCreate) {
+      let hasReq = data.keys().hasAll(['userId', 'role', 'createdAt']);
+      let exactSize = isCreate ? data.keys().size() == 3 : true;
+      return hasReq && exactSize
+        && data.userId is string
+        && data.role is string && (data.role == 'owner' || data.role == 'admin' || data.role == 'member')
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMessage(data, isCreate) {
+      let hasReq = data.keys().hasAll(['senderId', 'content', 'status', 'createdAt']);
+      let exactSize = isCreate ? data.keys().size() == 4 : true;
+      return hasReq && exactSize
+        && data.senderId is string && data.senderId == request.auth.uid
+        && data.content is string && data.content.size() <= 2000
+        && data.status is string && (data.status == 'sent' || data.status == 'delivered' || data.status == 'read')
+        && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // We might restrict list if needed, but for searching usernames it's needed
+      allow create: if isVerified() 
+                    && isValidId(userId) 
+                    && request.auth.uid == userId
+                    && isValidUser(incoming(), true)
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified() 
+                    && request.auth.uid == userId
+                    && isValidUser(incoming(), false)
+                    && incoming().updatedAt == request.time
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().email == existing().email;
+    }
+
+    match /channels/{channelId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isVerified()
+                    && isValidId(channelId)
+                    && isValidChannel(incoming(), true)
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified()
+                    && isValidChannel(incoming(), false)
+                    && incoming().updatedAt == request.time
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().ownerId == existing().ownerId
+                    && existing().ownerId == request.auth.uid
+                    && (!('isVerified' in incoming().diff(existing()).affectedKeys()) || (request.auth.token.email == 'marobunar@gmail.com')); // Only official email can verify
+    }
+
+    match /channels/{channelId}/subscribers/{subscriberId} {
+      allow get, list: if isSignedIn();
+      allow create: if isVerified()
+                    && isValidId(channelId)
+                    && isValidId(subscriberId)
+                    && subscriberId == request.auth.uid
+                    && isValidChannelSubscriber(incoming(), true)
+                    && incoming().createdAt == request.time
+                    && exists(/databases/$(database)/documents/channels/$(channelId));
+      allow delete: if isVerified() && subscriberId == request.auth.uid;
+    }
+
+    match /channels/{channelId}/posts/{postId} {
+      allow get, list: if isSignedIn();
+      allow create: if isVerified()
+                    && isValidId(channelId)
+                    && isValidId(postId)
+                    && isValidChannelPost(incoming(), true)
+                    && incoming().createdAt == request.time
+                    && get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid;
+      allow delete: if isVerified()
+                    && get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid;
+    }
+
+    match /chats/{chatId} {
+      allow get: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      
+      allow create: if isVerified()
+                    && isValidId(chatId)
+                    && isValidChat(incoming(), true)
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified()
+                    && isValidChat(incoming(), false)
+                    && incoming().updatedAt == request.time
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().type == existing().type
+                    && request.auth.uid in existing().participantIds;
+    }
+
+    match /chats/{chatId}/participants/{participantId} {
+      allow get, list: if isSignedIn() && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+      // For creation, either you are creating the chat (existsAfter) or you are invited by someone who is in the chat
+      allow create: if isVerified()
+                    && isValidId(chatId)
+                    && isValidId(participantId)
+                    && isValidChatParticipant(incoming(), true)
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified()
+                    && isValidChatParticipant(incoming(), false)
+                    && incoming().createdAt == existing().createdAt
+                    && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+    }
+
+    match /chats/{chatId}/messages/{messageId} {
+      allow get, list: if isSignedIn() && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+      allow create: if isVerified()
+                    && isValidId(chatId)
+                    && isValidId(messageId)
+                    && isValidMessage(incoming(), true)
+                    && incoming().createdAt == request.time
+                    && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+      allow update: if isVerified()
+                    && isValidMessage(incoming(), false)
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().senderId == existing().senderId
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+                    && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+    }
+  }
+}
