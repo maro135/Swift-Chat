@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { collection, query, orderBy, onSnapshot, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../context/AuthContext';
-import { Hash, X, Search, Check } from "lucide-react";
+import { Hash, X, Search, Check, Loader as Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ImageUpload } from '../lib/ImageUpload';
 import { toast } from 'sonner';
@@ -162,7 +162,7 @@ export function Channels() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div></div>
+        <div className="flex-1 flex items-center justify-center"><Loader2 size={24} className="animate-spin text-blue-500" /></div>
       ) : filteredChannels.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
            <Hash size={48} className="text-zinc-800 mb-4" />

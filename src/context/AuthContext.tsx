@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signOut as firebaseSignOut, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
@@ -12,7 +12,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-// Helper error handler
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -41,8 +40,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  // Not throwing here to prevent UI unhandled rejection crashes during snapshot listeners
-  // throw new Error(JSON.stringify(errInfo));
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -51,6 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    getRedirectResult(auth).catch(err => {
+      console.warn('Redirect result error:', err);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const userSnap = await getDoc(userRef);
-      
+
       if (userSnap.exists()) {
         setProfile(userSnap.data());
       } else {
@@ -85,21 +86,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         await setDoc(userRef, newProfile);
         setProfile(newProfile);
-        
-        // Custom logic for the verified marobunar channel
+
         if (currentUser.email === 'marobunar@gmail.com') {
           const channelRef = doc(db, 'channels', 'swift-official');
           const channelSnap = await getDoc(channelRef);
           if (!channelSnap.exists()) {
-             await setDoc(channelRef, {
-               ownerId: currentUser.uid,
-               name: 'Swift Official',
-               handle: 'swift_official',
-               description: 'The primary communication hub for Swift Chat developers. Get real-time updates on server status, new features, and APK releases.',
-               isVerified: true,
-               createdAt: serverTimestamp(),
-               updatedAt: serverTimestamp(),
-             });
+            await setDoc(channelRef, {
+              ownerId: currentUser.uid,
+              name: 'Swift Official',
+              handle: 'swift_official',
+              description: 'The primary communication hub for Swift Chat developers. Get real-time updates on server status, new features, and APK releases.',
+              isVerified: true,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
           }
         }
       }
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, profile, signOut, loading }}>
-        {children}
+      {children}
     </AuthContext.Provider>
   );
 }

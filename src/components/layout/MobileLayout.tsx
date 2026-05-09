@@ -3,16 +3,32 @@ import { useAuth } from '../../context/AuthContext';
 import { MessageCircle, Users, Hash, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
 
 export function MobileLayout() {
   const { user, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handleBackButton = (e: PopStateEvent) => {
+      if (location.pathname === '/chats') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('popstate', handleBackButton);
+    return () => window.removeEventListener('popstate', handleBackButton);
+  }, [location.pathname]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)] animate-pulse">
+            <span className="font-bold text-sm tracking-tighter italic text-white">SC</span>
+          </div>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+        </div>
       </div>
     );
   }
@@ -32,28 +48,25 @@ export function MobileLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-[#050505] text-[#F5F5F5] overflow-hidden font-sans">
-      {/* Header */}
-      <header className="px-4 pt-6 pb-4 bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between z-10 sticky top-0">
-         <div className="flex items-center gap-3">
-           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)]">
-             <span className="font-bold text-sm tracking-tighter italic text-white">SC</span>
-           </div>
-           <h1 className="text-xl font-semibold tracking-tight text-white">{currentTab?.name}</h1>
-         </div>
+      <header className="px-4 pt-safe bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between z-10 sticky top-0 shrink-0">
+        <div className="flex items-center gap-3 py-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+            <span className="font-bold text-sm tracking-tighter italic text-white">SC</span>
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-white">{currentTab?.name}</h1>
+        </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto no-scrollbar relative z-0">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="bg-[#0A0A0A] border-t border-white/5 pb-safe z-10">
+      <nav className="bg-[#0A0A0A] border-t border-white/5 pb-safe z-10 shrink-0">
         <div className="flex justify-around items-center h-16">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = location.pathname.startsWith(tab.path);
-            
+
             return (
               <button
                 key={tab.path}

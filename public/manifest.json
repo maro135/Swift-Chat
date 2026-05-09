@@ -1,6 +1,7 @@
 {
   "short_name": "SwiftChat",
-  "name": "Swift Chat Platform",
+  "name": "Swift Chat",
+  "description": "A next-generation lightweight messaging platform",
   "icons": [
     {
       "src": "/vite.svg",
@@ -15,6 +16,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#030712",
-  "background_color": "#030712"
+  "orientation": "portrait",
+  "theme_color": "#050505",
+  "background_color": "#050505"
 }
