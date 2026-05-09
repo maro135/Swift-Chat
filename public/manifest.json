@@ -1,20 +1,54 @@
 {
-  "short_name": "SwiftChat",
   "name": "Swift Chat Platform",
+  "short_name": "SwiftChat",
+  "description": "A modern, secure and fast messaging platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "orientation": "portrait",
+  "categories": ["communication", "social"],
   "icons": [
     {
-      "src": "/vite.svg",
+      "src": "/pwa-192x192.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
-      "src": "/vite.svg",
+      "src": "/pwa-512x512.svg",
       "type": "image/svg+xml",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#030712",
-  "background_color": "#030712"
+  "shortcuts": [
+    {
+      "name": "Chats",
+      "url": "/chats",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-512x512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "form_factor": "wide",
+      "label": "Swift Chat Desktop View"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "form_factor": "narrow",
+      "label": "Swift Chat Mobile View"
+    }
+  ]
 }

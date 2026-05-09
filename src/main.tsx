@@ -3,13 +3,10 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Register PWA service worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .catch(err => console.log('ServiceWorker registration failed: ', err));
-  });
-}
+import { registerSW } from 'virtual:pwa-register';
+
+// Automatically update service worker when available
+registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

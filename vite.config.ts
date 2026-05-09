@@ -12,30 +12,60 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.svg', 'pwa-512x512.svg'],
         manifest: {
           name: 'Swift Chat Platform',
           short_name: 'SwiftChat',
-          description: 'A modern chat platform',
+          description: 'A modern, secure and fast messaging platform.',
           theme_color: '#030712',
           background_color: '#030712',
           display: 'standalone',
+          orientation: 'portrait',
+          categories: ['communication', 'social'],
           icons: [
             {
               src: 'pwa-192x192.svg',
               sizes: '192x192',
-              type: 'image/svg+xml'
-            },
-            {
-              src: 'pwa-512x512.svg',
-              sizes: '512x512',
-              type: 'image/svg+xml'
+              type: 'image/svg+xml',
+              purpose: 'any'
             },
             {
               src: 'pwa-512x512.svg',
               sizes: '512x512',
               type: 'image/svg+xml',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: 'pwa-512x512.svg',
+              sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'maskable'
+            }
+          ],
+          shortcuts: [
+            {
+              name: 'New Chat',
+              url: '/chats',
+              icons: [{ src: 'pwa-192x192.svg', sizes: '192x192' }]
+            }
+          ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-cache',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             }
           ]
         }
