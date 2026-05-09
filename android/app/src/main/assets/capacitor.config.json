@@ -1,0 +1,5 @@
+{
+	"appId": "com.telegram.clone",
+	"appName": "TelegramApp",
+	"webDir": "dist"
+}

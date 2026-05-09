@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth, handleFirestoreError, OperationType } from '../context/AuthContext';
-import { LogOut, User as UserIcon, Shield, Bell, Key, X, Check } from "lucide-react";
+import { LogOut, User as UserIcon, Shield, Bell, Key, X, Check, Eye } from "lucide-react";
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { ImageUpload } from '../lib/ImageUpload';
@@ -77,6 +77,32 @@ export function Profile() {
     }
   }
 
+  const toggleLastSeen = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        lastSeenPrivacy: profile?.lastSeenPrivacy === 'nobody' ? 'everyone' : 'nobody',
+      });
+      toast.success("Updated Successfully.");
+    } catch(e) {
+      toast.error("Error updating setting");
+    }
+  }
+
+  const toggleProfilePhoto = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        profilePhotoPrivacy: profile?.profilePhotoPrivacy === 'nobody' ? 'everyone' : 'nobody',
+      });
+      toast.success("Updated Successfully.");
+    } catch(e) {
+      toast.error("Error updating setting");
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#050505] p-6 overflow-y-auto w-full max-w-md mx-auto relative">
       <div className="flex flex-col items-center mb-8 pt-4">
@@ -109,6 +135,10 @@ export function Profile() {
         <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden divide-y divide-white/5 border border-white/5">
            <ToggleItem icon={Shield} label="Private Account" description="Make your profile private" active={!!profile?.isPrivate} onToggle={togglePrivateAccount} />
            <ToggleItem icon={Bell} label="Notifications" description="Receive push notifications" active={profile?.notificationsEnabled !== false} onToggle={toggleNotification} />
+        </div>
+        <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden divide-y divide-white/5 border border-white/5 mt-4">
+           <ToggleItem icon={Eye} label="Show Last Seen" description="Allow others to see when you were last online" active={profile?.lastSeenPrivacy !== 'nobody'} onToggle={toggleLastSeen} />
+           <ToggleItem icon={UserIcon} label="Show Profile Photo" description="Allow others to see your avatar" active={profile?.profilePhotoPrivacy !== 'nobody'} onToggle={toggleProfilePhoto} />
         </div>
       </div>
 

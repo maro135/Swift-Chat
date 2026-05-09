@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { doc, updateDoc, arrayUnion, serverTimestamp, getDoc, increment } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { format } from 'date-fns';
-import { MessageSquare, Eye, Edit2, Check, SmilePlus } from 'lucide-react';
+import { MessageSquare, Eye, Edit2, Check, SmilePlus, Share2, CheckCheck } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { toast } from 'sonner';
-
-const EMOJIS = ['👍', '❤️', '🔥', '😂', '🎉'];
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import { useNavigate } from 'react-router-dom';
 
 interface MessageItemProps {
   key?: React.Key;
@@ -21,6 +21,10 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(msg.content);
   const [showReactions, setShowReactions] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [senderInfo, setSenderInfo] = useState<any>(null);
+
   const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.5,
@@ -30,17 +34,38 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
   const subcoll = isChannel ? 'posts' : 'messages';
 
   useEffect(() => {
-    // If message comes into view and user hasn't viewed it, log view.
     if (inView && auth.currentUser) {
       const viewedBy = msg.viewedBy || [];
       if (!viewedBy.includes(auth.currentUser.uid)) {
         const msgRef = doc(db, path, chatId, subcoll, msg.id);
         updateDoc(msgRef, {
           viewedBy: arrayUnion(auth.currentUser.uid)
-        }).catch(() => {}); // ignore errors (e.g. no permission)
+        }).catch(() => {});
       }
     }
   }, [inView, msg.id, msg.viewedBy, chatId, isChannel]);
+
+  useEffect(() => {
+    // Fetch sender info if not me
+    const uid = msg.senderId || msg.authorId;
+    if (uid && !isMe) {
+        getDoc(doc(db, 'users', uid)).then(snap => {
+            if (snap.exists()) setSenderInfo(snap.data());
+        }).catch(() => {});
+    }
+  }, [msg.senderId, msg.authorId, isMe]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        setShowReactions(false);
+      }
+    };
+    if (showReactions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showReactions]);
 
   const handleEdit = async () => {
     if (!editContent.trim() || editContent === msg.content) {
@@ -59,8 +84,9 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
     }
   };
 
-  const handleReaction = async (emoji: string) => {
+  const handleReaction = async (emojiObject: any) => {
     if (!auth.currentUser) return;
+    const emoji = emojiObject.emoji || emojiObject;
     setShowReactions(false);
     try {
       const msgRef = doc(db, path, chatId, subcoll, msg.id);
@@ -82,12 +108,49 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
     }
   };
 
+  const navigateToProfile = () => {
+      const uid = msg.senderId || msg.authorId;
+      if (uid && !isMe) navigate(`/user/${uid}`);
+  };
+
+  const handleShare = async () => {
+    if (!chatId || !msg.id) return;
+    const link = `${window.location.origin}/chat/${chatId}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Check out this post',
+          text: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : ''),
+          url: link,
+        });
+      } else {
+        await navigator.clipboard.writeText(link);
+        toast.success("Link copied to clipboard!");
+      }
+      if (isChannel && auth.currentUser) {
+        const msgRef = doc(db, path, chatId, subcoll, msg.id);
+        await updateDoc(msgRef, {
+           sharesCount: increment(1)
+        });
+      }
+    } catch (e) {
+      // Ignored share cancel
+    }
+  };
+
   const viewsCount = (msg.viewedBy || []).length;
-  // Compute flat reactions count per emoji
   const reactionsDisplay = Object.entries(msg.reactions || {}).filter(([_, users]: [string, any]) => users.length > 0);
 
   return (
-    <div ref={ref} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
+    <div ref={ref} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'} mb-2`}>
+      {(!isMe && !isChannel && senderInfo) && (
+          <span 
+              onClick={navigateToProfile} 
+              className="text-xs text-gray-400 ml-2 mb-1 cursor-pointer hover:underline"
+          >
+              {senderInfo.displayName || senderInfo.username || 'User'}
+          </span>
+      )}
       <div className={`relative max-w-[85%] rounded-2xl p-3 ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-zinc-800 text-white rounded-tl-sm'}`}>
         
         {isEditing ? (
@@ -120,26 +183,31 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
             <button title="React" onClick={() => setShowReactions(!showReactions)} className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors relative">
                 <SmilePlus size={14} />
             </button>
+            {isChannel && (
+               <button title="Share" onClick={handleShare} className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors relative">
+                 <Share2 size={14} />
+               </button>
+            )}
           </div>
         )}
 
         {showReactions && (
-          <div className={`absolute ${isMe ? '-top-10 right-0' : '-top-10 left-0'} bg-[#1A1A1A] border border-white/10 rounded-full flex gap-1 p-1 shadow-2xl z-20 animate-in fade-in zoom-in duration-200`}>
-            {EMOJIS.map(emoji => (
-              <button 
-                key={emoji} 
-                onClick={() => handleReaction(emoji)}
-                className="w-8 h-8 flex justify-center items-center rounded-full hover:bg-white/10 transition-colors text-lg"
-              >
-                {emoji}
-              </button>
-            ))}
+          <div ref={pickerRef} className={`absolute ${isMe ? '-top-10 right-0 md:right-auto md:left-full md:ml-2' : '-top-10 left-0 md:left-auto md:right-full md:mr-2'} z-50 animate-in fade-in zoom-in duration-200`}>
+             <EmojiPicker 
+                theme={Theme.DARK}
+                onEmojiClick={handleReaction} 
+                lazyLoadEmojis={true}
+                searchDisabled={true}
+                skinTonesDisabled={true}
+                width={280}
+                height={350}
+             />
           </div>
         )}
       </div>
 
       {reactionsDisplay.length > 0 && (
-         <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+         <div className={`flex flex-wrap gap-1 mt-1 z-10 relative ${isMe ? 'justify-end' : 'justify-start'}`}>
            {reactionsDisplay.map(([emoji, users]: [string, any]) => (
              <button 
                key={emoji} 
@@ -154,8 +222,13 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
       )}
 
       <div className={`flex items-center gap-3 text-[10px] text-gray-500 mt-1 px-1 w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-        <span>
+        <span className="flex items-center gap-1">
           {msg.createdAt?.toDate ? format(msg.createdAt.toDate(), "hh:mm a") : '...'}
+          {isMe && !isChannel && (
+            <span className={viewsCount > 0 ? "text-blue-500" : "text-zinc-600"}>
+               {viewsCount > 0 ? <CheckCheck size={14} /> : (msg.status === 'sent' ? <Check size={14} /> : <Check size={14} className="opacity-50" />)}
+            </span>
+          )}
         </span>
         
         {msg.editedAt && (
@@ -169,14 +242,20 @@ export function MessageItem({ msg, chatId, isChannel, onOpenComments }: MessageI
            className="flex items-center gap-1 hover:text-gray-300 transition-colors cursor-pointer"
         >
            <MessageSquare size={12} />
-           <span>Comments</span>
+           <span>{msg.commentsCount || 0} Comments</span>
         </button>
 
         {isChannel && (
-          <span className="flex items-center gap-1" title={`${viewsCount} views`}>
-            <Eye size={12} />
-            <span>{viewsCount}</span>
-          </span>
+          <>
+            <span className="flex items-center gap-1" title={`${viewsCount} views`}>
+              <Eye size={12} />
+              <span>{viewsCount}</span>
+            </span>
+            <span className="flex items-center gap-1 cursor-pointer hover:text-gray-300 transition-colors" title={`${msg.sharesCount || 0} shares`} onClick={handleShare}>
+              <Share2 size={12} />
+              <span>{msg.sharesCount || 0}</span>
+            </span>
+          </>
         )}
       </div>
     </div>

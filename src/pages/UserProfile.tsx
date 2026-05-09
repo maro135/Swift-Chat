@@ -120,6 +120,8 @@ export function UserProfile() {
     }
   };
 
+  const [showingFullscreenImage, setShowingFullscreenImage] = useState(false);
+
   if (loading) {
     return (
       <div className="flex flex-col h-full bg-[#050505] p-6 text-white justify-center items-center">
@@ -130,74 +132,99 @@ export function UserProfile() {
 
   if (!profile) {
     return (
-      <div className="flex flex-col h-full bg-[#050505] p-6 text-white justify-center items-center">
+      <div className="flex flex-col h-full bg-[#050505] p-6 text-white justify-center items-center animate-in fade-in">
         <h2 className="text-xl font-bold">User Not Found</h2>
-        <button onClick={() => navigate(-1)} className="mt-4 text-blue-500">Go Back</button>
+        <button onClick={() => navigate(-1)} className="mt-4 text-blue-500 hover:text-blue-400">Go Back</button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#050505] overflow-y-auto w-full max-w-md mx-auto relative">
-      <div className="flex items-center gap-4 p-4 border-b border-white/5 bg-[#0A0A0A] z-10 sticky top-0">
-        <button onClick={() => navigate(-1)} className="text-white hover:text-blue-400 transition-colors">
-          <ArrowLeft size={24} />
+    <div className="flex flex-col h-full bg-[#050505] overflow-y-auto w-full max-w-md mx-auto relative animate-in fade-in slide-in-from-right-4 duration-300">
+      <div className="flex items-center gap-4 p-4 border-b border-white/5 bg-[#0A0A0A]/80 z-10 sticky top-0 backdrop-blur-xl">
+        <button onClick={() => navigate(-1)} className="text-white hover:text-blue-400 transition-colors bg-white/5 p-2 rounded-full">
+          <ArrowLeft size={20} />
         </button>
-        <span className="text-white font-bold text-lg">Profile</span>
+        <div className="flex flex-col">
+           <span className="text-white font-bold text-lg leading-tight">{profile.displayName || profile.username || 'Profile'}</span>
+           <span className="text-[10px] text-zinc-500 font-medium">@{profile.username || 'handle'}</span>
+        </div>
       </div>
 
-      <div className="flex flex-col items-center mt-12 mb-8 px-6">
-        <div className="w-24 h-24 bg-zinc-800 rounded-full mb-4 flex items-center justify-center border border-white/10 shadow-xl relative overflow-hidden">
-           {profile.avatarUrl ? (
-             <img src={profile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-           ) : (
-             <UserIcon size={40} className="text-zinc-600" />
-           )}
+      <div className="relative w-full h-48 bg-gradient-to-b from-blue-900/40 to-[#050505] overflow-hidden group">
+         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 group-hover:scale-105 transition-transform duration-700"></div>
+      </div>
+
+      <div className="flex flex-col px-6 -mt-16 relative z-10">
+        <div className="flex justify-between items-end mb-4">
+            <div 
+               onClick={() => profile.avatarUrl && setShowingFullscreenImage(true)}
+               className="w-28 h-28 bg-zinc-800 rounded-full flex items-center justify-center border-4 border-[#050505] shadow-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95"
+            >
+               {profile.avatarUrl ? (
+                 <img src={profile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+               ) : (
+                 <UserIcon size={48} className="text-zinc-600" />
+               )}
+            </div>
+            
+            {id !== auth.currentUser?.uid && (
+              <div className="flex gap-2 mb-2">
+                <button disabled={messaging} onClick={handleMessageUser} className="w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors disabled:opacity-50 active:scale-95">
+                  <MessageSquare size={18} />
+                </button>
+                <button disabled={togglingFollow} onClick={toggleFollow} className={`px-5 font-semibold rounded-full py-2 flex items-center justify-center transition-colors disabled:opacity-50 active:scale-95 ${isFollowing ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-white text-black hover:bg-gray-200'}`}>
+                  <span>{isFollowing ? 'Following' : 'Follow'}</span>
+                </button>
+              </div>
+            )}
         </div>
+
         <h2 className="text-2xl font-bold text-white tracking-tight">{profile.displayName || profile.username || 'User'}</h2>
-        <p className="text-[11px] text-blue-500 font-mono mt-1">@{profile.username || 'handle'}</p>
+        <p className="text-sm text-blue-400 font-medium mt-0.5">@{profile.username || 'handle'}</p>
         
         {profile.isPrivate ? (
-          <div className="flex items-center gap-2 mt-4 text-orange-400 bg-orange-400/10 px-4 py-1 rounded-full text-xs font-medium">
+          <div className="flex items-center gap-2 mt-4 text-orange-400 bg-orange-400/10 px-4 py-2 rounded-xl text-xs font-medium self-start">
              <Shield size={14} /> This account is private
           </div>
         ) : (
-          <p className="text-center text-zinc-400 mt-4 text-sm max-w-xs leading-relaxed">{profile.bio || 'This user is using Swift Chat.'}</p>
+          <p className="text-zinc-300 mt-4 text-sm leading-relaxed whitespace-pre-wrap">{profile.bio || 'This user is using Swift Chat.'}</p>
         )}
       </div>
 
-      <div className="flex justify-center divide-x divide-white/10 mb-8 border-y border-white/5 py-4 bg-[#0A0A0A]">
-        <div className="px-6 text-center">
-          <p className="text-lg font-bold text-white uppercase">{followerCount}</p>
-          <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">Followers</p>
+      <div className="flex mt-6 mb-6 border-y border-white/5 py-4 bg-[#0A0A0A]">
+        <div className="flex-1 px-4 text-center cursor-pointer hover:bg-white/5 transition-colors rounded-xl py-2">
+          <p className="text-xl font-bold text-white">{followerCount}</p>
+          <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase mt-1">Followers</p>
         </div>
-        <div className="px-6 text-center">
-          <p className="text-lg font-bold text-white uppercase">{followingCount}</p>
-          <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">Following</p>
+        <div className="w-px bg-white/10"></div>
+        <div className="flex-1 px-4 text-center cursor-pointer hover:bg-white/5 transition-colors rounded-xl py-2">
+          <p className="text-xl font-bold text-white">{followingCount}</p>
+          <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase mt-1">Following</p>
         </div>
       </div>
 
-      <div className="px-6 space-y-4">
-        {id !== auth.currentUser?.uid && (
-          <div className="flex gap-3">
-            <button disabled={togglingFollow} onClick={toggleFollow} className={`flex-1 font-semibold rounded-2xl py-3 px-4 flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 ${isFollowing ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-white text-black hover:bg-gray-200'}`}>
-              {isFollowing ? <UserMinus size={18} /> : <UserPlus size={18} />}
-              <span>{isFollowing ? 'Unfollow' : 'Follow'}</span>
-            </button>
-            <button disabled={messaging} onClick={handleMessageUser} className="flex-1 bg-blue-600 text-white font-semibold rounded-2xl py-3 px-4 flex items-center justify-center space-x-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-50">
-              <MessageSquare size={18} />
-              <span>{messaging ? 'Opening...' : 'Message'}</span>
-            </button>
-          </div>
-        )}
-
-        <div className="bg-[#0A0A0A] rounded-2xl border border-white/5 p-4 mt-6">
-           <div className="flex justify-between items-center mb-2">
-             <span className="text-xs text-gray-500 font-medium">Joined</span>
-             <span className="text-xs text-white">{profile.createdAt?.toDate ? format(profile.createdAt.toDate(), "MMM d, yyyy") : 'Unknown'}</span>
+      <div className="px-6 space-y-4 pb-10">
+        <div className="bg-[#0A0A0A] rounded-2xl border border-white/5 p-4">
+           <div className="flex justify-between items-center">
+             <span className="text-sm text-gray-500 font-medium">Joined date</span>
+             <span className="text-sm text-white font-medium">{profile.createdAt?.toDate ? format(profile.createdAt.toDate(), "MMMM yyyy") : 'Unknown'}</span>
            </div>
         </div>
       </div>
+
+      {showingFullscreenImage && profile.avatarUrl && (
+         <div 
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex items-center justify-center animate-in fade-in duration-200"
+            onClick={() => setShowingFullscreenImage(false)}
+         >
+            <img 
+               src={profile.avatarUrl} 
+               className="max-w-full max-h-full object-contain animate-in zoom-in-90 duration-300" 
+               alt="Full Screen View"
+            />
+         </div>
+      )}
     </div>
   );
 }

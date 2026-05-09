@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, setDoc, serverTimestamp, deleteDoc, onSnapshot, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, setDoc, serverTimestamp, deleteDoc, onSnapshot, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { ArrowLeft, Hash, Users, Trash2, Edit3, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Hash, Users, Trash2, Edit3, MessageSquare, Settings, Shield, X, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -14,6 +14,7 @@ export function ChannelProfile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [togglingFollow, setTogglingFollow] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (!id || !auth.currentUser) return;
@@ -73,6 +74,19 @@ export function ChannelProfile() {
     }
   };
 
+  const togglePrivate = async () => {
+    if (!auth.currentUser || !id) return;
+    try {
+      await updateDoc(doc(db, 'channels', id), {
+         isPrivate: !channel?.isPrivate
+      });
+      setChannel({...channel, isPrivate: !channel?.isPrivate});
+      toast.success("Privacy updated");
+    } catch(e) {
+      toast.error("Error updating privacy setting");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col h-full bg-[#050505] p-6 text-white justify-center items-center">
@@ -92,8 +106,53 @@ export function ChannelProfile() {
 
   const isOwner = channel.ownerId === auth.currentUser?.uid;
 
+  if (showSettings) {
+    return (
+      <div className="flex flex-col h-full bg-[#050505] overflow-y-auto w-full max-w-md mx-auto relative animate-in slide-in-from-right-4 duration-300">
+        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-[#0A0A0A] z-10 sticky top-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setShowSettings(false)} className="text-white hover:text-blue-400 transition-colors">
+              <ArrowLeft size={24} />
+            </button>
+            <span className="text-white font-bold text-lg">Channel Settings</span>
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
+           <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden divide-y divide-white/5 border border-white/5">
+               <div onClick={togglePrivate} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer">
+                 <div className="flex items-center space-x-3">
+                   <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center">
+                     <Shield size={16} className="text-zinc-400" />
+                   </div>
+                   <div className="flex flex-col">
+                     <span className="text-sm font-bold text-white">Private Channel</span>
+                     <span className="text-[10px] text-zinc-500">Hide from global discovery</span>
+                   </div>
+                 </div>
+                 <div className={`w-10 h-6 rounded-full p-1 transition-colors ${channel?.isPrivate ? 'bg-blue-600' : 'bg-zinc-700'}`}>
+                   <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${channel?.isPrivate ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                 </div>
+               </div>
+           </div>
+
+           <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden border border-red-500/10 mt-8">
+              <div onClick={deleteChannel} className="flex items-center space-x-3 p-4 hover:bg-red-500/10 transition-colors cursor-pointer text-red-500">
+                 <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center">
+                   <Trash2 size={16} />
+                 </div>
+                 <div className="flex flex-col">
+                   <span className="text-sm font-bold">Delete Channel</span>
+                   <span className="text-[10px] opacity-70">This action cannot be undone</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full bg-[#050505] overflow-y-auto w-full max-w-md mx-auto relative">
+    <div className="flex flex-col h-full bg-[#050505] overflow-y-auto w-full max-w-md mx-auto relative animate-in fade-in duration-300">
       <div className="flex items-center justify-between p-4 border-b border-white/5 bg-[#0A0A0A] z-10 sticky top-0">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="text-white hover:text-blue-400 transition-colors">
@@ -102,8 +161,8 @@ export function ChannelProfile() {
           <span className="text-white font-bold text-lg">Channel Profile</span>
         </div>
         {isOwner && (
-          <button onClick={deleteChannel} className="text-red-500 hover:text-red-400 transition-colors p-2 bg-red-500/10 rounded-full">
-            <Trash2 size={18} />
+          <button onClick={() => setShowSettings(true)} className="text-zinc-400 hover:text-white transition-colors p-2 bg-white/5 rounded-full">
+            <Settings size={18} />
           </button>
         )}
       </div>
@@ -127,6 +186,12 @@ export function ChannelProfile() {
           <p className="text-lg font-bold text-white uppercase">{followerCount}</p>
           <p className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">Followers</p>
         </div>
+        {channel.isPrivate && (
+          <div className="px-6 text-center flex flex-col items-center justify-center">
+            <Shield size={18} className="text-blue-400 mb-1" />
+            <p className="text-[10px] text-blue-400 font-bold tracking-wider uppercase">Private</p>
+          </div>
+        )}
       </div>
 
       <div className="px-6 space-y-4">
@@ -140,13 +205,13 @@ export function ChannelProfile() {
         {isOwner && (
           <button onClick={() => navigate(`/chat/${id}`)} className="w-full bg-white text-black font-semibold rounded-2xl py-4 px-4 flex items-center justify-center space-x-2 hover:bg-gray-200 transition-colors">
             <Edit3 size={18} />
-            <span>Manage Channel</span>
+            <span>Manage Content</span>
           </button>
         )}
 
-        <button onClick={() => navigate(`/chat/${id}`)} className="w-full bg-blue-600 text-white font-semibold rounded-2xl py-4 px-4 flex items-center justify-center space-x-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-900/20 mt-2">
+        <button onClick={() => navigate(`/chat/${id}`)} className="w-full bg-blue-600/10 text-blue-500 font-semibold rounded-2xl py-4 px-4 flex items-center justify-center space-x-2 hover:bg-blue-600/20 transition-colors mt-2">
           <MessageSquare size={18} />
-          <span>Go to Channel</span>
+          <span>Go to Channel Feed</span>
         </button>
 
         <div className="bg-[#0A0A0A] rounded-2xl border border-white/5 p-4 mt-6">

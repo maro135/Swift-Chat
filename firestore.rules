@@ -37,7 +37,7 @@ service cloud.firestore {
 
     function isValidChannel(data, isCreate) {
       let hasReq = data.keys().hasAll(['ownerId', 'name', 'handle', 'createdAt', 'updatedAt']);
-      let exactSize = isCreate ? (data.keys().size() >= 5 && data.keys().size() <= 8) : true;
+      let exactSize = isCreate ? (data.keys().size() >= 5 && data.keys().size() <= 9) : true;
       return hasReq && exactSize
         && data.ownerId is string && data.ownerId == request.auth.uid
         && data.name is string && data.name.size() <= 100
@@ -46,7 +46,8 @@ service cloud.firestore {
         && data.updatedAt is timestamp
         && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
         && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1000000))
-        && (!('isVerified' in data) || data.isVerified is bool);
+        && (!('isVerified' in data) || data.isVerified is bool)
+        && (!('isPrivate' in data) || data.isPrivate is bool);
     }
 
     function isValidChannelSubscriber(data, isCreate) {
@@ -66,7 +67,8 @@ service cloud.firestore {
         && (!('editedAt' in data) || data.editedAt is timestamp)
         && (!('viewedBy' in data) || data.viewedBy is list)
         && (!('reactions' in data) || data.reactions is map)
-        && (!('commentsCount' in data) || data.commentsCount is number);
+        && (!('commentsCount' in data) || data.commentsCount is number)
+        && (!('sharesCount' in data) || data.sharesCount is number);
     }
 
     function isValidChat(data, isCreate) {
@@ -183,7 +185,7 @@ service cloud.firestore {
                     && incoming().createdAt == existing().createdAt
                     && incoming().authorId == existing().authorId
                     && (
-                       (incoming().diff(existing()).affectedKeys().hasOnly(['viewedBy', 'reactions', 'commentsCount']))
+                       (incoming().diff(existing()).affectedKeys().hasOnly(['viewedBy', 'reactions', 'commentsCount', 'sharesCount']))
                        || 
                        (get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'editedAt']))
                     );
@@ -233,6 +235,11 @@ service cloud.firestore {
                     && isValidChatParticipant(incoming(), false)
                     && incoming().createdAt == existing().createdAt
                     && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+    }
+
+    match /chats/{chatId}/typing/{userId} {
+      allow get, list: if isSignedIn() && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
+      allow write: if isVerified() && userId == request.auth.uid && exists(/databases/$(database)/documents/chats/$(chatId)/participants/$(request.auth.uid));
     }
 
     match /chats/{chatId}/messages/{messageId} {

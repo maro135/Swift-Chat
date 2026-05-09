@@ -182,7 +182,12 @@ export function Chats() {
                      {chat.updatedAt?.toDate ? format(chat.updatedAt.toDate(), "hh:mm a") : ''}
                    </span>
                  </div>
-                 <p className="text-xs opacity-50 text-white truncate">{chat.recentMessage || 'Started a new chat'}</p>
+                 <div className="flex items-center gap-1">
+                   {chat.lastMessageSenderId === auth.currentUser?.uid && (
+                      <span className="text-blue-500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></span>
+                   )}
+                   <p className="text-xs opacity-50 text-white truncate">{chat.recentMessage || 'Started a new chat'}</p>
+                 </div>
                </div>
             </motion.div>
           ))}
