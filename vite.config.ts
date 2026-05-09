@@ -12,8 +12,9 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.svg', 'pwa-512x512.svg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
+          id: 'com.swiftchat.app',
           name: 'Swift Chat Platform',
           short_name: 'SwiftChat',
           description: 'A modern, secure and fast messaging platform.',
@@ -24,21 +25,21 @@ export default defineConfig(({ mode }) => {
           categories: ['communication', 'social'],
           icons: [
             {
-              src: 'pwa-192x192.svg',
+              src: 'pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'pwa-512x512.svg',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'pwa-512x512.svg',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'maskable'
             }
           ],
@@ -46,7 +47,23 @@ export default defineConfig(({ mode }) => {
             {
               name: 'New Chat',
               url: '/chats',
-              icons: [{ src: 'pwa-192x192.svg', sizes: '192x192' }]
+              icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+            }
+          ],
+          screenshots: [
+            {
+              src: 'screenshot-1.png',
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Desktop Chat Dashboard'
+            },
+            {
+              src: 'screenshot-2.png',
+              sizes: '720x1280',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Mobile Chat Interface'
             }
           ]
         },

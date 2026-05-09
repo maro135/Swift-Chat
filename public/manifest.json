@@ -1,4 +1,5 @@
 {
+  "id": "com.swiftchat.app",
   "name": "Swift Chat Platform",
   "short_name": "SwiftChat",
   "description": "A modern, secure and fast messaging platform.",
@@ -10,20 +11,20 @@
   "categories": ["communication", "social"],
   "icons": [
     {
-      "src": "/pwa-192x192.svg",
-      "type": "image/svg+xml",
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/pwa-512x512.svg",
-      "type": "image/svg+xml",
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "/pwa-512x512.svg",
-      "type": "image/svg+xml",
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
     }
@@ -32,21 +33,21 @@
     {
       "name": "Chats",
       "url": "/chats",
-      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
     {
-      "src": "/pwa-512x512.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
+      "src": "/screenshot-1.png",
+      "type": "image/png",
+      "sizes": "1280x720",
       "form_factor": "wide",
       "label": "Swift Chat Desktop View"
     },
     {
-      "src": "/pwa-512x512.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
+      "src": "/screenshot-2.png",
+      "type": "image/png",
+      "sizes": "720x1280",
       "form_factor": "narrow",
       "label": "Swift Chat Mobile View"
     }
