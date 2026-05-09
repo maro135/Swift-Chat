@@ -1,30 +1,19 @@
 {
-  "name": "swift-chat",
+  "name": "react-example",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit",
-    "cap:sync": "npx cap sync",
-    "cap:sync:android": "npx cap sync android",
-    "android:build:debug": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
-    "android:build:release": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
-    "android:open": "npx cap open android",
-    "android:run": "npm run build && npx cap sync android && npx cap run android"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.3",
-    "@capacitor/app": "^6.0.3",
-    "@capacitor/cli": "^8.3.3",
     "@capacitor/core": "^8.3.3",
-    "@capacitor/haptics": "^6.0.3",
     "@capacitor/ios": "^8.3.3",
-    "@capacitor/keyboard": "^6.0.4",
-    "@capacitor/status-bar": "^6.0.3",
     "@google/genai": "^1.29.0",
     "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/vite": "^4.1.14",
@@ -53,6 +42,8 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "vite-plugin-pwa": "^1.3.0",
+    "workbox-window": "^7.4.1"
   }
 }
