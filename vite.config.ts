@@ -12,7 +12,14 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+        includeAssets: [
+          'favicon.png',
+          'apple-touch-icon.png',
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'screenshot-1.png',
+          'screenshot-2.png'
+        ],
         manifest: {
           id: 'com.swiftchat.app',
           name: 'Swift Chat Platform',
@@ -23,6 +30,8 @@ export default defineConfig(({ mode }) => {
           display: 'standalone',
           orientation: 'portrait',
           categories: ['communication', 'social'],
+          lang: 'en',
+          dir: 'ltr',
           icons: [
             {
               src: 'pwa-192x192.png',

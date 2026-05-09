@@ -9,6 +9,8 @@
   "theme_color": "#030712",
   "orientation": "portrait",
   "categories": ["communication", "social"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -31,7 +33,7 @@
   ],
   "shortcuts": [
     {
-      "name": "Chats",
+      "name": "New Chat",
       "url": "/chats",
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
